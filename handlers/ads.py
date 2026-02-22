@@ -188,24 +188,47 @@ async def confirm_ad(callback: CallbackQuery, state: FSMContext, bot: Bot):
         await callback.answer()
         return
 
-    message_ids: list = data.get("message_ids", [])
-    photos: list = data.get("photos", []) # Keep for create_ad
-    audios: list = data.get("audios", []) # Keep for create_ad
-    texts: list = data.get("texts", []) # Keep for create_ad
+    photos: list = data.get("photos", [])
+    videos: list = data.get("videos", [])
+    audios: list = data.get("audios", [])
+    texts: list = data.get("texts", [])
 
     now = datetime.now(timezone.utc)
-    ad = await queries.create_ad(user_id, photos + audios, "\n".join(texts) if texts else None)
+    ad = await queries.create_ad(user_id, photos + videos + audios, "\n".join(texts) if texts else None)
 
     user = await queries.get_user(user_id)
+    caption = "\n".join(texts) if texts else None
 
     try:
-        # Forward each message from user to the group
-        for msg_id in message_ids:
-            await bot.forward_message(
-                chat_id=settings.GROUP_ID,
-                from_chat_id=user_id,
-                message_id=msg_id
-            )
+        # Prepare media group for photos and videos
+        media_group = []
+        for i, file_id in enumerate(photos):
+            media_group.append(InputMediaPhoto(media=file_id))
+        
+        for i, file_id in enumerate(videos):
+            media_group.append(InputMediaVideo(media=file_id))
+
+        if media_group:
+            # Attach caption to the first item in the media group
+            media_group[0].caption = caption
+            media_group[0].parse_mode = "HTML"
+
+            if len(media_group) > 1:
+                await bot.send_media_group(chat_id=settings.GROUP_ID, media=media_group)
+            else:
+                # Single photo or video
+                item = media_group[0]
+                if isinstance(item, InputMediaPhoto):
+                    await bot.send_photo(chat_id=settings.GROUP_ID, photo=item.media, caption=caption, parse_mode="HTML")
+                else:
+                    await bot.send_video(chat_id=settings.GROUP_ID, video=item.media, caption=caption, parse_mode="HTML")
+        elif caption:
+            # Only text was sent
+            await bot.send_message(chat_id=settings.GROUP_ID, text=caption, parse_mode="HTML")
+
+        # Audios are sent separately or could be grouped if there are multiple (simplicity for now)
+        for audio_file_id in audios:
+            await bot.send_audio(chat_id=settings.GROUP_ID, audio=audio_file_id)
 
         await queries.mark_ad_sent(ad["id"], now)
         await queries.update_last_ad(user_id, now)
