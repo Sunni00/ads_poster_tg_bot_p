@@ -332,6 +332,58 @@ async def cmd_setrole(message: Message):
     await message.answer(f"✅ {target_id} foydalanuvchi roli <b>{role}</b> ga o'zgartirildi.", parse_mode="HTML")
 
 
+# ─────────────────────────── Pagination ────────────────────────────
+
+@router.callback_query(F.data.startswith("ul_p_"))
+async def extend_list_page(callback: CallbackQuery, state: FSMContext):
+    """Navigate pages in the 'Uzaytirish' user list."""
+    if not await check_admin(callback):
+        await callback.answer("⛔ Kirish taqiqlangan.", show_alert=True)
+        return
+
+    page = int(callback.data.split("ul_p_")[1])
+    now = datetime.now(timezone.utc)
+    users = await queries.get_all_users()
+    users = [u for u in users if u["subscription_until"] is None or u["subscription_until"] < now]
+
+    if not users:
+        await callback.answer("📋 Obunasi yo'q foydalanuvchilar topilmadi.", show_alert=True)
+        return
+
+    await callback.message.edit_reply_markup(
+        reply_markup=kb_users_list(users, now, page=page)
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("vul_p_"))
+async def view_list_page(callback: CallbackQuery):
+    """Navigate pages in the 'Obunalar' view list."""
+    if not await check_admin(callback):
+        await callback.answer("⛔ Kirish taqiqlangan.", show_alert=True)
+        return
+
+    page = int(callback.data.split("vul_p_")[1])
+    now = datetime.now(timezone.utc)
+    users = await queries.get_all_users()
+    active_users = [u for u in users if u["subscription_until"] and u["subscription_until"] > now]
+
+    if not active_users:
+        await callback.answer("📋 Faol obunaga ega foydalanuvchilar topilmadi.", show_alert=True)
+        return
+
+    await callback.message.edit_reply_markup(
+        reply_markup=kb_view_users_list(active_users, now, page=page)
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "noop")
+async def noop_callback(callback: CallbackQuery):
+    """Silently acknowledge the page-counter button (no action)."""
+    await callback.answer()
+
+
 # ─────────────────────────── Universal cancel ───────────────────────
 
 @router.callback_query(F.data == "admin_cancel")
