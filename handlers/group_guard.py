@@ -43,7 +43,7 @@ async def group_message_guard(message: Message, bot: Bot):
         )
     elif user is None:
         reason = (
-            f"❌ Hurmatli mijoz\n"
+            f"❌ Hurmatli {message.from_user.full_name}\n"
             "Guruhga yozish uchun admin tomonidan ruxsat olishingiz kerak!\n"
             "@jondor_admin1 ga yozing!✅"
         )
