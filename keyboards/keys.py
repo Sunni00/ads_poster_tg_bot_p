@@ -35,6 +35,9 @@ def kb_admin_menu() -> ReplyKeyboardMarkup:
                 KeyboardButton(text="🚫 Blackout"),
                 KeyboardButton(text="🔑 Rollar"),
             ],
+            [
+                KeyboardButton(text="🗑 Obunani bekor qilish"),
+            ],
         ],
         resize_keyboard=True,
     )
@@ -150,5 +153,41 @@ def kb_blackout_list(blackouts: list) -> InlineKeyboardMarkup:
         label = f"🗑 #{b['id']} {b['start_datetime'].strftime('%d.%m %H:%M')} – {b['end_datetime'].strftime('%d.%m %H:%M')}"
         buttons.append([InlineKeyboardButton(text=label, callback_data=f"del_blackout_{b['id']}")])
     buttons.append([InlineKeyboardButton(text="➕ Qo'shish", callback_data="add_blackout")])
+    buttons.append([InlineKeyboardButton(text="❌ Yopish", callback_data="admin_cancel")])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def kb_remove_sub_list(users: list, now, page: int = 0) -> InlineKeyboardMarkup:
+    """Paginated list of active subscribers for subscription removal.
+    callback prefix: rs_p_{page}
+    """
+    total_pages = max(1, (len(users) + PAGE_SIZE - 1) // PAGE_SIZE)
+    page = max(0, min(page, total_pages - 1))
+    start = page * PAGE_SIZE
+    page_users = users[start : start + PAGE_SIZE]
+
+    buttons = []
+    for u in page_users:
+        name = u["full_name"] or u["username"] or f"ID{u['telegram_id']}"
+        sub = u["subscription_until"]
+        until_str = sub.strftime('%d.%m.%Y') if sub else "—"
+        buttons.append([
+            InlineKeyboardButton(
+                text=f"🗑 {name} — {until_str} gacha",
+                callback_data=f"remove_sub_{u['telegram_id']}",
+            )
+        ])
+
+    # Navigation row
+    nav = []
+    if page > 0:
+        nav.append(InlineKeyboardButton(text="⬅ Orqaga", callback_data=f"rs_p_{page - 1}"))
+    if total_pages > 1:
+        nav.append(InlineKeyboardButton(text=f"{page + 1}/{total_pages}", callback_data="noop"))
+    if page < total_pages - 1:
+        nav.append(InlineKeyboardButton(text="Oldinga ➡", callback_data=f"rs_p_{page + 1}"))
+    if nav:
+        buttons.append(nav)
+
     buttons.append([InlineKeyboardButton(text="❌ Yopish", callback_data="admin_cancel")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)

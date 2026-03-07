@@ -74,6 +74,14 @@ async def extend_subscription(telegram_id: int, until: datetime):
         )
 
 
+async def remove_subscription(telegram_id: int):
+    async with _pool.acquire() as conn:
+        await conn.execute(
+            "UPDATE users SET subscription_until = NULL WHERE telegram_id = $1",
+            telegram_id,
+        )
+
+
 async def get_all_users() -> list[asyncpg.Record]:
     async with _pool.acquire() as conn:
         return await conn.fetch(

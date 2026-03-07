@@ -16,6 +16,7 @@ from keyboards.keys import (
     kb_admin_menu,
     kb_users_list,
     kb_view_users_list,
+    kb_remove_sub_list,
 )
 from states.forms import AdminExtendStates, AdminBlackoutStates
 
@@ -25,7 +26,11 @@ ADMIN_ROLES = {"admin", "superadmin"}
 
 
 async def check_admin(source) -> Optional[str]:
-    user = await queries.get_user(source.from_user.id)
+    user_id = source.from_user.id
+    # .env superadmin always has access, even without a DB record
+    if user_id == settings.SUPERADMIN_ID:
+        return "superadmin"
+    user = await queries.get_user(user_id)
     if user and user["role"] in ADMIN_ROLES:
         return user["role"]
     return None
@@ -386,6 +391,98 @@ async def view_list_page(callback: CallbackQuery):
 @router.callback_query(F.data == "noop")
 async def noop_callback(callback: CallbackQuery):
     """Silently acknowledge the page-counter button (no action)."""
+    await callback.answer()
+
+
+# ─────────────────────────── Remove Subscription ────────────────────
+
+@router.message(F.text == "🗑 Obunani bekor qilish", F.chat.type == ChatType.PRIVATE)
+async def cmd_remove_sub(message: Message):
+    if not await check_admin(message):
+        return
+
+    now = datetime.now(timezone.utc)
+    users = await queries.get_all_users()
+    active_users = [u for u in users if u["subscription_until"] and u["subscription_until"] > now]
+
+    if not active_users:
+        return await message.answer("📋 Faol obunaga ega foydalanuvchilar topilmadi.")
+
+    await message.answer(
+        "🗑 <b>Obunani bekor qilish:</b>\nFoydalanuvchini tanlang:",
+        reply_markup=kb_remove_sub_list(active_users, now),
+        parse_mode="HTML",
+    )
+
+
+@router.callback_query(F.data.startswith("remove_sub_"))
+async def confirm_remove_sub(callback: CallbackQuery, bot: Bot):
+    if not await check_admin(callback):
+        await callback.answer("⛔ Kirish taqiqlangan.", show_alert=True)
+        return
+
+    target_id = int(callback.data.split("remove_sub_")[1])
+    user = await queries.get_user(target_id)
+    if not user:
+        await callback.answer("❌ Foydalanuvchi topilmadi.", show_alert=True)
+        return
+
+    await queries.remove_subscription(target_id)
+
+    name = user["full_name"] or user["username"] or f"ID{target_id}"
+
+    # Notify the user
+    try:
+        await bot.send_message(
+            chat_id=target_id,
+            text="❌ Sizning obunangiz admin tomonidan bekor qilindi.\n"
+                 "Obunani qayta faollashtirish uchun @jondor_admin1 ga murojaat qiling.",
+        )
+    except Exception:
+        pass  # User may have blocked the bot
+
+    # Refresh the list
+    now = datetime.now(timezone.utc)
+    users = await queries.get_all_users()
+    active_users = [u for u in users if u["subscription_until"] and u["subscription_until"] > now]
+
+    if active_users:
+        await callback.message.edit_text(
+            f"✅ <b>{name}</b> obunasi bekor qilindi.\n\n"
+            "🗑 <b>Obunani bekor qilish:</b>\nFoydalanuvchini tanlang:",
+            reply_markup=kb_remove_sub_list(active_users, now),
+            parse_mode="HTML",
+        )
+    else:
+        await callback.message.edit_text(
+            f"✅ <b>{name}</b> obunasi bekor qilindi.\n"
+            "📋 Boshqa faol obunalar yo'q.",
+            parse_mode="HTML",
+        )
+        await callback.message.answer("👀", reply_markup=kb_admin_menu())
+
+    await callback.answer(f"✅ {name} obunasi o'chirildi")
+
+
+@router.callback_query(F.data.startswith("rs_p_"))
+async def remove_sub_list_page(callback: CallbackQuery):
+    """Navigate pages in the remove-subscription list."""
+    if not await check_admin(callback):
+        await callback.answer("⛔ Kirish taqiqlangan.", show_alert=True)
+        return
+
+    page = int(callback.data.split("rs_p_")[1])
+    now = datetime.now(timezone.utc)
+    users = await queries.get_all_users()
+    active_users = [u for u in users if u["subscription_until"] and u["subscription_until"] > now]
+
+    if not active_users:
+        await callback.answer("📋 Faol obunaga ega foydalanuvchilar topilmadi.", show_alert=True)
+        return
+
+    await callback.message.edit_reply_markup(
+        reply_markup=kb_remove_sub_list(active_users, now, page=page)
+    )
     await callback.answer()
 
 
