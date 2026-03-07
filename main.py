@@ -10,7 +10,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from config import settings
 from db import queries
 from db.models import ALL_TABLES
-from handlers import start, ads, admin
+from handlers import start, admin, group_guard
 
 logging.basicConfig(
     level=logging.INFO,
@@ -40,8 +40,8 @@ async def main():
 
     # Register routers (order matters — more specific first)
     dp.include_router(start.router)
-    dp.include_router(ads.router)
     dp.include_router(admin.router)
+    dp.include_router(group_guard.router)
 
     logger.info("Bot starting...")
     try:

@@ -7,6 +7,7 @@ from aiogram.enums import ChatType
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 
+from config import settings
 from db import queries
 from keyboards.keys import (
     kb_extend_months,
@@ -291,9 +292,11 @@ async def delete_blackout(callback: CallbackQuery):
 
 @router.message(F.text == "🔑 Rollar", F.chat.type == ChatType.PRIVATE)
 async def cmd_roles_help(message: Message):
-    user = await queries.get_user(message.from_user.id)
-    if not user or user["role"] != "superadmin":
-        return await message.answer("⛔ Faqat superadmin uchun.")
+    is_superadmin = message.from_user.id == settings.SUPERADMIN_ID
+    if not is_superadmin:
+        user = await queries.get_user(message.from_user.id)
+        if not user or user["role"] != "superadmin":
+            return await message.answer("⛔ Faqat superadmin uchun.")
 
     await message.answer(
         "🔑 <b>Rollarni boshqarish</b>\n\n"
@@ -307,9 +310,11 @@ async def cmd_roles_help(message: Message):
 
 @router.message(Command("setrole"), F.chat.type == ChatType.PRIVATE)
 async def cmd_setrole(message: Message):
-    user = await queries.get_user(message.from_user.id)
-    if not user or user["role"] != "superadmin":
-        return await message.answer("⛔ Faqat superadmin uchun.")
+    is_superadmin = message.from_user.id == settings.SUPERADMIN_ID
+    if not is_superadmin:
+        user = await queries.get_user(message.from_user.id)
+        if not user or user["role"] != "superadmin":
+            return await message.answer("⛔ Faqat superadmin uchun.")
 
     parts = message.text.strip().split()
     if len(parts) != 3:

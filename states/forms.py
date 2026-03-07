@@ -5,10 +5,6 @@ class RegistrationStates(StatesGroup):
     waiting_contact = State()
 
 
-class AdStates(StatesGroup):
-    collecting = State()   # user freely sends photos/text/audio
-    confirm = State()      # user sees preview and confirms
-
 
 class AdminExtendStates(StatesGroup):
     waiting_months_or_date = State()

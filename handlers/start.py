@@ -5,7 +5,7 @@ from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 
 from db import queries
-from keyboards.keys import kb_request_contact, kb_main_menu, kb_admin_menu
+from keyboards.keys import kb_request_contact, kb_admin_menu, kb_remove
 from states.forms import RegistrationStates
 from config import settings
 
@@ -15,7 +15,7 @@ ADMIN_ROLES = {"admin", "superadmin"}
 
 
 def _menu_for(role: str):
-    return kb_admin_menu() if role in ADMIN_ROLES else kb_main_menu()
+    return kb_admin_menu() if role in ADMIN_ROLES else kb_remove()
 
 
 @router.message(CommandStart(), F.chat.type == ChatType.PRIVATE)
@@ -77,8 +77,10 @@ async def handle_contact(message: Message, state: FSMContext):
     )
     await state.clear()
     await message.answer(
-        "✅ Ro'yxatdan o'tish yakunlandi! Jondor olxga reklama berish uchun 10 ming so'm to'lov qilishingiz kerak. @jondor_admin1",
-        reply_markup=kb_main_menu(),
+        "✅ Ro'yxatdan o'tish yakunlandi!\n"
+        "Endi guruhga a'zo bo'lib, reklama berish uchun obuna sotib oling.\n"
+        "To'lov uchun: @jondor_admin1",
+        reply_markup=kb_remove(),
     )
 
 

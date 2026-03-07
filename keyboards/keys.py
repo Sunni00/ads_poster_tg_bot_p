@@ -19,19 +19,14 @@ def kb_request_contact() -> ReplyKeyboardMarkup:
     )
 
 
-def kb_main_menu() -> ReplyKeyboardMarkup:
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="📤 Reklama berish")],
-        ],
-        resize_keyboard=True,
-    )
+def kb_main_menu() -> ReplyKeyboardRemove:
+    """Clients use the group directly — no private-chat action buttons needed."""
+    return ReplyKeyboardRemove()
 
 
 def kb_admin_menu() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="📤 Reklama berish")],
             [
                 KeyboardButton(text="👥 Obunalar"),
                 KeyboardButton(text="➕ Uzaytirish"),
@@ -45,30 +40,11 @@ def kb_admin_menu() -> ReplyKeyboardMarkup:
     )
 
 
-def kb_collecting_ad() -> ReplyKeyboardMarkup:
-    """Shown while user is composing an ad."""
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="📨 Reklamani yuborish")],
-            [KeyboardButton(text="❌ Bekor qilish")],
-        ],
-        resize_keyboard=True,
-    )
-
-
 def kb_remove() -> ReplyKeyboardRemove:
     return ReplyKeyboardRemove()
 
 
 # ─── Inline keyboards ───────────────────────────────────────────────
-
-def kb_confirm_ad() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="✅ Tasdiqlash va yuborish", callback_data="confirm_ad")],
-            [InlineKeyboardButton(text="❌ Bekor qilish", callback_data="cancel_ad")],
-        ]
-    )
 
 
 def kb_extend_months() -> InlineKeyboardMarkup:
