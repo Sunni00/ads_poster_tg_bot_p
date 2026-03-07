@@ -41,11 +41,11 @@ async def group_message_guard(message: Message, bot: Bot):
             f"🚫 Hozir nashr qilish vaqtincha taqiqlangan.\n"
             f"⏰ {end_str} (UTC) dan keyin harakat qilib ko'ring."
         )
-    elif user is None:
-        reason = (
-            "⚠️ Siz hali ro'yxatdan o'tmagansiz.\n"
-            "Ro'yxatdan o'tish uchun botga yozing va /start buyrug'ini kiriting."
-        )
+    # elif user is None:
+    #     reason = (
+    #         "⚠️ Siz hali ro'yxatdan o'tmagansiz.\n"
+    #         "Ro'yxatdan o'tish uchun botga yozing va /start buyrug'ini kiriting."
+    #     )
     else:
         # Registered but no active subscription
         reason = (
